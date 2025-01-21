@@ -7,3 +7,4 @@ basemap==1.4.1
 Flask==2.2.3
 xarray==2023.6.0
 pillow==9.5.0
+Werkzeug==2.0.3
