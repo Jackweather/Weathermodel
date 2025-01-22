@@ -5,30 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Visualizations</title>
     <style>
-        /* Reset default margin and padding */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* Set up the body with a clean background */
+        /* Basic styling */
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             background-color: #f3f4f6;
             color: #333;
-            padding: 0;
-            line-height: 1.6;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            overflow: hidden;
-            margin: 0;
             flex-direction: column;
+            margin: 0;
         }
 
-        /* Header styling */
         header {
             background-color: #4CAF50;
             color: white;
@@ -36,53 +25,31 @@
             width: 100%;
             text-align: center;
             font-size: 2rem;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 10;
         }
 
-        /* Main image styling */
-        .image-container {
-            flex: 1;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            position: relative;
-            z-index: 5;
+        select, button {
+            padding: 15px 30px;
+            font-size: 20px;
+            margin: 10px;
+            border-radius: 10px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
         }
 
         img {
-            min-width: 100%;
-            min-height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease-in-out;
-            z-index: 1;
+            max-width: 100%;
+            max-height: 500px;
+            margin-top: 20px;
         }
-
-        img:hover {
-            transform: scale(1.05);
-        }
-
-        /* Larger dropdown styling */
-        select {
-            position: absolute;
-            bottom: 40px; /* Adjust bottom positioning */
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 20px 40px; /* Larger padding for bigger size */
-            font-size: 24px; /* Larger font size */
-            border-radius: 12px; /* Rounded corners */
-            border: 2px solid #ddd;
-            background-color: #f9f9f9;
-            cursor: pointer;
-            z-index: 10;
-            width: 60%; /* Adjust the width to be more significant */
-            min-width: 250px; /* Ensures dropdown width is always wide enough */
-        }
-
     </style>
 </head>
 <body>
@@ -92,22 +59,49 @@
     </header>
 
     <!-- Image display section -->
-    <div class="image-container">
-        <img id="main-image" src="{{ url_for('serve_image', filename=image_files[0]) }}" alt="Weather Image">
-    </div>
+    <img id="main-image" src="{% if image_files %}{{ url_for('serve_image', filename=image_files[0]) }}{% else %}placeholder.png{% endif %}" alt="Weather Image">
 
     <!-- Dropdown for selecting image -->
     <select id="image-select" onchange="updateImage(this.value)">
-        <option value="{{ url_for('serve_image', filename=image_files[0]) }}">Select a weather image</option>
+        <option value="">Select a weather image</option>
         {% for image in image_files %}
             <option value="{{ url_for('serve_image', filename=image) }}">{{ image }}</option>
         {% endfor %}
     </select>
 
+    <!-- Button to run Python script -->
+    <button id="run-script" onclick="runScript()">Run GFS Rain and Snow Analysis</button>
+
     <script>
-        // Function to update the displayed image based on dropdown selection
         function updateImage(selectedImage) {
             document.getElementById('main-image').src = selectedImage;
+        }
+
+        function runScript() {
+            fetch('/run-gfs-script', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.images && data.images.length > 0) {
+                    const imageSelect = document.getElementById('image-select');
+                    imageSelect.innerHTML = '';  // Clear previous options
+                    
+                    data.images.forEach(image => {
+                        let option = document.createElement('option');
+                        option.value = `/images/${image}`;
+                        option.textContent = image;
+                        imageSelect.appendChild(option);
+                    });
+
+                    updateImage(`/images/${data.images[0]}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to run script.');
+            });
         }
     </script>
 
