@@ -94,13 +94,14 @@ def run_task():
 
     # Define reflectivity bounds and colors for snow and rain with custom levels and colors
     rain_levels = [10, 20, 30, 40, 50, 60, 75]
-    rain_colors = ['#b2ff59', '#66bb6a', '#ffff00', '#ff8c00', '#ff0000', '#8b0000']  # Light green to dark red
+    rain_colors = ['#b2ff59', '#66bb6a', '#006400', '#ffff00', '#ff8c00', '#ff0000']  # Light green to dark red
     cmap_refc_rain = plt.cm.colors.ListedColormap(rain_colors)
     norm_refc_rain = plt.cm.colors.BoundaryNorm(rain_levels, cmap_refc_rain.N)
 
-    snow_levels = [0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100, 150]
-    snow_colors = ['#ffffff', '#c8e1ff', '#75c9ff', '#3fa1e6', '#0062d0', '#002e72', '#001c3a', '#000008', '#D3D3D3', '#0000FF', '#B0C4DE', '#FFFAFA']
-    cmap_refc_snow = plt.cm.colors.ListedColormap(snow_colors)
+    snow_levels = [0, 5, 10, 15, 20, 25, 30, 35, 40]  
+    snow_colors = ['#e0f7fa', '#b3e5fc', '#81d4fa', '#4fc3f7', '#29b6f6', '#039be5',  
+               '#0288d1', '#0277bd', '#01579b']  # Light to dark blue  
+    cmap_refc_snow = plt.cm.colors.ListedColormap(snow_colors)  
     norm_refc_snow = plt.cm.colors.BoundaryNorm(snow_levels, cmap_refc_snow.N)
 
     # Function to generate a single reflectivity plot for both snow and rain
@@ -120,12 +121,17 @@ def run_task():
                     lons = np.where(lons > 180, lons - 360, lons)
                     lon_grid, lat_grid = np.meshgrid(lons, lats)
 
-                    fig, ax = plt.subplots(figsize=(12, 8))
-                    m = Basemap(projection='cyl', llcrnrlat=20, urcrnrlat=50,
-                                llcrnrlon=-130, urcrnrlon=-60, resolution='i', ax=ax)
-                    m.drawcoastlines()
-                    m.drawcountries()
-                    m.drawstates()
+                    # Create the map focused on the USA
+                    plt.figure(figsize=(12, 8), dpi=120)
+                    m = Basemap(projection='lcc', resolution='i',  # 'i' resolution for more detail
+                                lat_0=37.5, lon_0=-98.35,
+                                width=6e6, height=3e6)
+
+                    # Draw map features
+                    m.drawcoastlines(linewidth=0.8)
+                    m.drawcountries(linewidth=0.8)
+                    m.drawstates(linewidth=0.5)
+                    m.drawcounties(linewidth=0.4, color='gray')  # Add counties to the map
 
                     snow_mask = temperature_f < 32
                     refc_snow = np.ma.masked_where(~snow_mask, refc)
@@ -165,14 +171,18 @@ def run_task():
         create_combined_reflectivity_plot(temp_file_path, refc_file_path, output_filename, step)
         image_paths.append(output_filename)
 
-    # Create a GIF from the images
-    output_gif = os.path.join(rs_folder, "reflectivity.gif")
-    image_frames = [Image.open(image_path) for image_path in image_paths]
-    image_frames[0].save(output_gif, save_all=True, append_images=image_frames[1:], duration=500, loop=0)
+    # Create an animated GIF from the reflectivity images
+    gif_filename = os.path.join(rs_folder, "reflectivity_animation.gif")
+    create_gif(image_paths, gif_filename)
+    print(f"GIF saved: {gif_filename}")
 
-    print(f"GIF created: {output_gif}")
+    # Sleep for 8 hours
+    time.sleep(8 * 3600)
 
-# Run the task every 8 hours
-while True:
-    run_task()
-    time.sleep(8 * 60 * 60)  # Wait for 8 hours before running again
+# Function to create GIF from image files
+def create_gif(image_paths, gif_filename):
+    images = [Image.open(image_path) for image_path in image_paths]
+    images[0].save(gif_filename, save_all=True, append_images=images[1:], duration=500, loop=0)
+
+# Run the task
+run_task()

@@ -1,4 +1,5 @@
 import os
+import shutil
 import requests
 import xarray as xr
 import numpy as np
@@ -10,11 +11,30 @@ from PIL import Image
 # Folder paths for GRIB data and image outputs
 base_folder = "./public"
 grib_folder = os.path.join(base_folder, "grib")
+grib_folder_surft = os.path.join(grib_folder, "surft")  # Add the 'surft' folder
 images_folder = os.path.join(base_folder, "images")
 temp_folder = os.path.join(base_folder, "temp")
 
+# Function to clear a folder
+def clear_folder(folder_path):
+    if os.path.exists(folder_path):
+        for filename in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)  # Remove file or symlink
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)  # Remove directory and its contents
+            except Exception as e:
+                print(f"Failed to delete {file_path}: {e}")
+
+# Clear the 'surft' and 'temp' folders before execution
+clear_folder(grib_folder_surft)
+clear_folder(temp_folder)
+
 # Ensure the folders exist
 os.makedirs(grib_folder, exist_ok=True)
+os.makedirs(grib_folder_surft, exist_ok=True)  # Ensure 'surft' folder exists
 os.makedirs(temp_folder, exist_ok=True)
 
 # Get today's date and format it for the URL
@@ -47,7 +67,7 @@ for hour in [hour_str, f"{(int(hour_str) - 6) % 24:02d}"]:  # Try current and pa
 
         # Check if the file exists
         if file_exists(url):
-            filename = os.path.join(grib_folder, f"gfs.t{hour}z.pgrb2.0p25.{step}.grib2")
+            filename = os.path.join(grib_folder_surft, f"gfs.t{hour}z.pgrb2.0p25.{step}.grib2")  # Save to 'surft' folder
 
             # Request the file from the URL
             response = requests.get(url)
@@ -125,7 +145,7 @@ def create_temperature_plot(file_path, output_filename):
 image_files = []
 for hour in [hour_str, f"{(int(hour_str) - 6) % 24:02d}"]:  # Try current and past run
     for step in forecast_steps:
-        grib_file_path = os.path.join(grib_folder, f"gfs.t{hour}z.pgrb2.0p25.{step}.grib2")
+        grib_file_path = os.path.join(grib_folder_surft, f"gfs.t{hour}z.pgrb2.0p25.{step}.grib2")  # Use 'surft' folder
         if os.path.exists(grib_file_path):
             output_filename = os.path.join(temp_folder, f"temperature_{hour}_{step}.png")
             create_temperature_plot(grib_file_path, output_filename)

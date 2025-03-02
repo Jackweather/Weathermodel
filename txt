@@ -1,1 +1,31 @@
 https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?dir=%2Fgfs.20250115%2F12%2Fatmos&file=gfs.t12z.pgrb2.0p25.anl&var_CFRZR=on&var_CICEP=on&var_CPOFP=on&var_CRAIN=on&var_CSNOW=on&var_PRATE=on&lev_surface=on
+from flask import Flask, render_template, send_from_directory
+import os
+
+app = Flask(__name__)
+
+# Define the folder path for RS images
+rs_folder = os.path.join(os.getcwd(), 'public', 'RS')
+
+@app.route('/')
+def index():
+    # Get a list of all image files (png, gif) in the RS folder
+    image_files = [f for f in os.listdir(rs_folder) if f.endswith(('.png', '.gif'))]
+    
+    # Pass the list of image files to the template
+    return render_template('index.html', image_files=image_files)
+
+@app.route('/images/<filename>')
+def serve_image(filename):
+    # Dynamically serve images and GIF from the 'RS' folder
+    return send_from_directory(rs_folder, filename)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+
+schedule.every().day.at("12:10").do(run_task)
+    schedule.every().day.at("18:10").do(run_task)
+    schedule.every().day.at("00:10").do(run_task)
+    schedule.every().day.at("06:10").do(run_task)
